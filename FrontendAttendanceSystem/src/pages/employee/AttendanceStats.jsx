@@ -17,7 +17,7 @@ export default function AttendanceStats() {
     const fetchStats = async () => {
       try {
         // ⭐ CORRECT ROUTE
-        const res = await api.get("/attendance/analytics");
+        const res = await api.get("/attendance/my-stats");
 
         setStats([
           { name: "Present", value: res.data.present || 0 },

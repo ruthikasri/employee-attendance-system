@@ -1,27 +1,34 @@
 const express = require("express");
 const router = express.Router();
 
-const protect = require("../middleware/authMiddleware");
-const authorizeRole = require("../middleware/roleMiddleware");  
-const attendanceController = require("../controllers/attendanceController");
+const authMiddleware = require("../middleware/authMiddleware");
+const managerMiddleware = require("../middleware/managerMiddleware");
 
-/* ---------- EMPLOYEE ---------- */
+const {
+  checkIn,
+  checkOut,
+  todayStatus,
+  myHistory,
+  myMonthlySummary,
+  myStats,
+  allAttendance,
+  employeeAnalytics,
+  filterByDate,
+  downloadReport
+} = require("../controllers/attendanceController");
 
-router.post("/checkin", protect, attendanceController.checkIn);
-router.post("/checkout", protect, attendanceController.checkOut);
-router.get("/today", protect, attendanceController.todayStatus);
-router.get("/myhistory", protect, attendanceController.myHistory);
-router.get("/stats", protect, attendanceController.attendanceStats);
-router.get("/summary", protect, attendanceController.monthlyReport);
+/* Employee */
+router.post("/checkin", authMiddleware, checkIn);
+router.post("/checkout", authMiddleware, checkOut);
+router.get("/status", authMiddleware, todayStatus);
+router.get("/myhistory", authMiddleware, myHistory);
+router.get("/my-monthly-summary", authMiddleware, myMonthlySummary);
+router.get("/my-stats", authMiddleware, myStats);
 
-
-/* ---------- MANAGER ---------- */
-
-router.get("/all", protect, authorizeRole("manager"), attendanceController.allAttendance);
-router.get("/monthly-report", protect, authorizeRole("manager"), attendanceController.monthlyReport);
-router.get("/analytics", protect, authorizeRole("manager"), attendanceController.employeeAnalytics);
-router.get("/download", protect, authorizeRole("manager"), attendanceController.downloadReport);
-router.get("/filter", protect, authorizeRole("manager"), attendanceController.filterByDate);
-router.get("/report", protect, authorizeRole("manager"), attendanceController.downloadReport);
+/* Manager */
+router.get("/all", authMiddleware, managerMiddleware, allAttendance);
+router.get("/analytics", authMiddleware, managerMiddleware, employeeAnalytics);
+router.get("/filter", authMiddleware, managerMiddleware, filterByDate);
+router.get("/download", authMiddleware, managerMiddleware, downloadReport);
 
 module.exports = router;

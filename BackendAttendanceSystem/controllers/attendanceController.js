@@ -1,227 +1,300 @@
 const Attendance = require("../models/Attendance");
-const User = require("../models/User");
 const { Parser } = require("json2csv");
 
-/* ========================= HELPERS ========================= */
-function getToday() {
-  return new Date().toISOString().split("T")[0];
-}
-function hookingUser(req) {
-  return req.user._id;
-}
+/* ================= IST TIME ================= */
 
-/* ========================= CHECK IN ========================= */
-exports.checkIn = async (req, res) => {
+const getISTNow = () => {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+};
+
+const getTodayDate = () => {
+  return getISTNow().toISOString().split("T")[0];
+};
+
+/* ================= CHECK IN ================= */
+
+const checkIn = async (req, res) => {
   try {
-    const userId = hookingUser(req);
-    const today = getToday();
+    const userId = req.user.id;
+    const today = getTodayDate();
+    const now = getISTNow();
 
     const existing = await Attendance.findOne({ userId, date: today });
     if (existing)
-      return res.status(400).json({ message: "Already checked in today" });
+      return res.status(400).json({ message: "You already checked in today" });
+
+    let status = "present";
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    if (hour > 11 || (hour === 11 && minute > 0))
+      status = "half-day";
+    else if (hour > 9 || (hour === 9 && minute > 30))
+      status = "late";
 
     const attendance = await Attendance.create({
       userId,
       date: today,
-      checkInTime: new Date(),
-      status: "checked-in"
+      checkInTime: now,
+      status,
     });
 
     res.json({ message: "Check-in successful", attendance });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-/* ========================= CHECK OUT ========================= */
-exports.checkOut = async (req, res) => {
+/* ================= CHECK OUT ================= */
+
+const checkOut = async (req, res) => {
   try {
-    const userId = hookingUser(req);
-    const today = getToday();
+    const userId = req.user.id;
+    const today = getTodayDate();
+    const now = getISTNow();
 
     const attendance = await Attendance.findOne({ userId, date: today });
 
     if (!attendance)
-      return res.status(400).json({ message: "You must check-in first" });
+      return res.status(400).json({ message: "You didn't check in today" });
 
     if (attendance.checkOutTime)
-      return res.status(400).json({ message: "Already checked out today" });
+      return res.status(400).json({ message: "Already checked out" });
 
-    attendance.checkOutTime = new Date();
+    attendance.checkOutTime = now;
 
-    const diff = attendance.checkOutTime - attendance.checkInTime;
-    const hours = diff / (1000 * 60 * 60);
-    attendance.totalHours = Number(hours.toFixed(2));
+    const diff = (attendance.checkOutTime - attendance.checkInTime) / (1000 * 60 * 60);
+    attendance.totalHours = parseFloat(diff.toFixed(2));
 
-    if (hours >= 8) attendance.status = "present";
-    else if (hours >= 4) attendance.status = "half-day";
-    else attendance.status = "late";
+    if (attendance.totalHours < 4)
+      attendance.status = "half-day";
 
     await attendance.save();
 
     res.json({ message: "Check-out successful", attendance });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-/* ========================= TODAY STATUS ========================= */
-exports.todayStatus = async (req, res) => {
+/* ================= TODAY STATUS ================= */
+
+const todayStatus = async (req, res) => {
   try {
-    const userId = hookingUser(req);
-    const today = getToday();
+    const userId = req.user.id;
+    const today = getTodayDate();
 
     const attendance = await Attendance.findOne({ userId, date: today });
 
     if (!attendance) return res.json({ status: "not-checked-in" });
-    if (attendance.checkOutTime) return res.json({ status: "completed", attendance });
+    if (attendance.checkOutTime) return res.json({ status: "completed" });
 
-    return res.json({ status: "checked-in", attendance });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.json({ status: "checked-in" });
+
+  } catch {
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-/* ========================= EMPLOYEE HISTORY ========================= */
-exports.myHistory = async (req, res) => {
+/* ================= HISTORY ================= */
+
+const myHistory = async (req, res) => {
   try {
-    const records = await Attendance.find({ userId: req.user._id }).sort({ date: -1 });
+    const userId = req.user.id;
+    const records = await Attendance.find({ userId }).sort({ date: -1 });
     res.json(records);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  } catch {
+    res.status(500).json({ message: "Failed to fetch history" });
   }
 };
 
-/* ========================= MONTHLY SUMMARY (FIXED FOR REACT) ========================= */
-exports.monthlyReport = async (req, res) => {
-  try {
-    const records = await Attendance.find({ userId: req.user._id });
+/* ================= MONTHLY SUMMARY ================= */
 
-    let presentDays = 0;
-    let lateDays = 0;
-    let halfDays = 0;
-    let totalHours = 0;
+const myMonthlySummary = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const now = getISTNow();
+
+    const month = now.getMonth();
+    const year = now.getFullYear();
+
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month + 1, 0);
+
+    const records = await Attendance.find({
+      userId,
+      date: { $gte: start.toISOString().split("T")[0], $lte: end.toISOString().split("T")[0] }
+    });
+
+    let present = 0, late = 0, half = 0, hours = 0;
 
     records.forEach(r => {
-      if (r.status === "present") presentDays++;
-      if (r.status === "late") lateDays++;
-      if (r.status === "half-day") halfDays++;
-      totalHours += r.totalHours || 0;
+      if (r.status === "present") present++;
+      else if (r.status === "late") late++;
+      else half++;
+
+      hours += r.totalHours || 0;
     });
 
     res.json({
-      presentDays,
-      lateDays,
-      halfDays,
-      totalHours: Number(totalHours.toFixed(2))
+      presentDays: present,
+      lateDays: late,
+      halfDays: half,
+      totalHours: hours.toFixed(2)
     });
 
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  } catch {
+    res.status(500).json({ message: "Failed to fetch monthly summary" });
   }
 };
 
-/* ========================= ATTENDANCE STATS (LAST 7 DAYS) ========================= */
-exports.attendanceStats = async (req, res) => {
+/* ================= STATS ================= */
+
+const myStats = async (req, res) => {
   try {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const userId = req.user.id;
+    const records = await Attendance.find({ userId });
 
-    const records = await Attendance.find({
-      userId: req.user._id,
-      checkInTime: { $gte: sevenDaysAgo }
-    }).sort({ date: 1 });
+    let present = 0, late = 0, half = 0;
 
-    res.json(records);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    records.forEach(r => {
+      if (r.status === "present") present++;
+      else if (r.status === "late") late++;
+      else half++;
+    });
+
+    res.json({ present, late, half });
+
+  } catch {
+    res.status(500).json({ message: "Failed to fetch stats" });
   }
 };
 
-/* ========================= ALL EMPLOYEES (MANAGER) ========================= */
-exports.allAttendance = async (req, res) => {
+/* ================= MANAGER ================= */
+
+const allAttendance = async (req, res) => {
   try {
     const records = await Attendance.find()
-      .populate("userId", "name email employeeId department")
+      .populate("userId", "name employeeId email department")
       .sort({ date: -1 });
 
     res.json(records);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  } catch {
+    res.status(500).json({ message: "Failed to fetch attendance" });
   }
 };
 
-/* ========================= FILTER BY DATE ========================= */
-exports.filterByDate = async (req, res) => {
+const employeeAnalytics = async (req, res) => {
   try {
-    const { date } = req.query;
+    const records = await Attendance.find().populate("userId", "_id");
 
-    const records = await Attendance.find({ date })
-      .populate("userId", "name employeeId department");
-
-    res.json(records);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-/* ========================= MANAGER DASHBOARD ANALYTICS ========================= */
-exports.employeeAnalytics = async (req, res) => {
-  try {
-    const today = getToday();
-
-    const records = await Attendance.find({ date: today });
-
-    let regularEmployees = 0;
-    let irregularEmployees = 0;
-    let lowProductivity = 0;
+    let regular = 0, irregular = 0, lowProductive = 0;
+    const map = {};
 
     records.forEach(r => {
-      if (r.status === "present") regularEmployees++;
-      else if (r.status === "late") irregularEmployees++;
-      else if ((r.totalHours || 0) < 4) lowProductivity++;
+      const id = r.userId._id;
+      if (!map[id]) map[id] = { present: 0, late: 0, half: 0 };
+
+      if (r.status === "present") map[id].present++;
+      else if (r.status === "late") map[id].late++;
+      else map[id].half++;
     });
 
-    res.json({
-      regularEmployees,
-      irregularEmployees,
-      lowProductivity
+    Object.values(map).forEach(emp => {
+      if (emp.present >= emp.late && emp.present >= emp.half) regular++;
+      else if (emp.late > emp.present) irregular++;
+      else lowProductive++;
     });
 
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.json({ regular, irregular, lowProductive });
+
+  } catch {
+    res.status(500).json({ message: "Analytics failed" });
   }
 };
 
-/* ========================= CSV REPORT DOWNLOAD (FIXED) ========================= */
-exports.downloadReport = async (req, res) => {
+/* ================= FILTER ================= */
+
+const filterByDate = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const records = await Attendance.find({ date })
+      .populate("userId", "name employeeId department");
+    res.json(records);
+  } catch {
+    res.status(500).json({ message: "Filter failed" });
+  }
+};
+
+/* ================= DOWNLOAD CSV (FINAL CORRECT FIX) ================= */
+
+const downloadReport = async (req, res) => {
   try {
     const records = await Attendance.find()
       .populate("userId", "name employeeId");
 
-    const reportData = records.map(r => ({
-      Name: r.userId?.name || "",
-      EmployeeID: r.userId?.employeeId || "",
-      Date: r.date,
-      CheckIn: r.checkInTime ? new Date(r.checkInTime).toLocaleTimeString() : "",
-      CheckOut: r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString() : "",
-      Status: r.status,
-      TotalHours: r.totalHours || 0
+    // ---- DATE FORMAT (DD/MM/YYYY) ----
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+      const d = new Date(dateString);
+      return d.toLocaleDateString("en-GB");   // 17/02/2026
+    };
+
+    // ---- TIME FORMAT (12hr IST) ----
+    const formatTime = (time) => {
+      if (!time) return "";
+      const t = new Date(time);
+      return t.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+    };
+
+    // ---- BUILD CSV DATA ----
+    const data = records.map(r => ({
+      Name: r.userId?.name || "N/A",
+      EmployeeID: r.userId?.employeeId || "N/A",
+
+      // ⭐ THIS LINE FIXES ######## EXCEL ISSUE
+      Date: `'${formatDate(r.date)}`,  
+
+      CheckIn: formatTime(r.checkInTime),
+      CheckOut: formatTime(r.checkOutTime),
+      Hours: r.totalHours ? r.totalHours.toFixed(2) : "0.00",
+      Status: r.status || "-"
     }));
 
     const parser = new Parser({
-      fields: ["Name","EmployeeID","Date","CheckIn","CheckOut","Status","TotalHours"]
+      fields: ["Name","EmployeeID","Date","CheckIn","CheckOut","Hours","Status"]
     });
 
-    const csv = parser.parse(reportData);
+    const csv = parser.parse(data);
 
-    res.setHeader("Content-Disposition", "attachment; filename=attendance-report.csv");
     res.setHeader("Content-Type", "text/csv");
-
-    return res.status(200).send(csv);
+    res.setHeader("Content-Disposition", "attachment; filename=Payroll_Report.csv");
+    res.status(200).send(csv);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "CSV generation failed" });
+    console.log("CSV ERROR:", err);
+    res.status(500).json({ message: "CSV download failed" });
   }
+};
+
+
+module.exports = {
+  checkIn,
+  checkOut,
+  todayStatus,
+  myHistory,
+  myMonthlySummary,
+  myStats,
+  allAttendance,
+  employeeAnalytics,
+  filterByDate,
+  downloadReport
 };

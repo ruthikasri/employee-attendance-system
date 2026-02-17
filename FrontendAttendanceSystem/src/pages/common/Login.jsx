@@ -3,46 +3,54 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import API from "../../utils/api";
 import "./Login.css";
 
-export default function Login(){
+export default function Login() {
 
-  const [email,setEmail]=useState("");
-  const [password,setPassword]=useState("");
-  const [error,setError]=useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const selectedRole = searchParams.get("role"); // employee OR manager
+  const selectedRole = searchParams.get("role"); // employee or manager
 
-  const login = async(e)=>{
+  const login = async (e) => {
     e.preventDefault();
     setError("");
 
-    try{
-      const res = await API.post("/auth/login",{email,password});
+    try {
 
-      // 🔴 ROLE VALIDATION (MOST IMPORTANT)
-      if(res.data.user.role !== selectedRole){
-        setError(`This account belongs to ${res.data.user.role}. Please use correct portal.`);
+      const res = await API.post("/auth/login", {
+        email,
+        password
+      });
+
+      const user = res.data.user;
+
+      // ROLE VALIDATION
+      if (user.role !== selectedRole) {
+        setError(`This account belongs to ${user.role}. Please use correct portal.`);
         return;
       }
 
-      // store session
-      localStorage.setItem("token",res.data.token);
-      localStorage.setItem("role",res.data.user.role);
-      localStorage.setItem("user",JSON.stringify(res.data.user));
+      // Save session
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("user", JSON.stringify(user));
+      window.dispatchEvent(new Event("storage"));
 
-      // redirect
-      if(res.data.user.role==="manager")
+      // Redirect based on role
+      if (user.role === "manager") {
         navigate("/manager/dashboard");
-      else
+      } else {
         navigate("/employee/attendance");
+      }
 
-    }catch(err){
-      setError("Invalid email or password");
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed");
     }
   };
 
-  return(
+  return (
     <div className="login-wrapper">
 
       <form className="login-card" onSubmit={login}>
@@ -57,20 +65,21 @@ export default function Login(){
         <input
           type="email"
           placeholder="Email address"
-          onChange={(e)=>setEmail(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
 
         <input
           type="password"
           placeholder="Password"
-          onChange={(e)=>setPassword(e.target.value)}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
 
         <button type="submit">Sign In</button>
 
-        {/* Show register only for employee */}
         {selectedRole === "employee" && (
           <p className="register-link">
             New Employee?{" "}
@@ -80,9 +89,10 @@ export default function Login(){
           </p>
         )}
 
-        <p className="back" onClick={()=>navigate("/")}>
+        <p className="back" onClick={() => navigate("/")}>
           ← Back to Home
         </p>
+
       </form>
 
     </div>

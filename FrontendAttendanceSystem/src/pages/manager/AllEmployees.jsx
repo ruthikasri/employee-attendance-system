@@ -1,45 +1,76 @@
-import { useEffect,useState } from "react";
-import API from "../../utils/api";
+import "./ManagerPages.css";
+import api from "../../utils/api";
+import { useEffect, useState } from "react";
 
 export default function AllEmployees(){
 
-  const [records,setRecords]=useState([]);
+  const [data,setData] = useState([]);
 
   useEffect(()=>{
-    API.get("/attendance/all")
-    .then(res=>setRecords(res.data))
-    .catch(err=>console.log(err));
+    const fetch = async()=>{
+      try{
+        const res = await api.get("/attendance/all");
+        setData(res.data);
+      }catch(err){
+        console.log(err);
+      }
+    };
+    fetch();
   },[]);
 
   return(
-    <div style={{padding:"30px"}}>
-      <h2>All Employees Attendance</h2>
+    <div className="manager-page">
 
-      <table border="1" cellPadding="10">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Employee ID</th>
-            <th>Date</th>
-            <th>CheckIn</th>
-            <th>CheckOut</th>
-            <th>Status</th>
-          </tr>
-        </thead>
+      <h2 className="manager-title">All Employees Attendance</h2>
 
-        <tbody>
-          {records.map(r=>(
-            <tr key={r._id}>
-              <td>{r.userId?.name}</td>
-              <td>{r.userId?.employeeId}</td>
-              <td>{r.date}</td>
-              <td>{r.checkInTime?.slice(11,19)}</td>
-              <td>{r.checkOutTime?.slice(11,19)}</td>
-              <td>{r.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="manager-card">
+
+        <div className="table-wrapper">
+
+          <table className="attendance-table">
+
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Employee ID</th>
+                <th>Date</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {data.map((emp,i)=>(
+                <tr key={i}>
+                  <td>{emp.userId?.name}</td>
+                  <td>{emp.userId?.employeeId}</td>
+                  <td>{emp.date}</td>
+                  <td>
+                    {emp.checkInTime
+                      ? new Date(emp.checkInTime).toLocaleTimeString("en-IN")
+                      : "-"}
+                  </td>
+
+                  <td>
+                    {emp.checkOutTime
+                      ? new Date(emp.checkOutTime).toLocaleTimeString("en-IN")
+                      : "-"}
+                  </td>
+
+                  <td>
+                    <span className={`status-badge ${emp.status}`}>
+                      {emp.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+
+          </table>
+
+        </div>
+      </div>
     </div>
   );
 }

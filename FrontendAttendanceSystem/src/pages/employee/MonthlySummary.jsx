@@ -8,7 +8,7 @@ export default function MonthlySummary(){
 
   useEffect(()=>{
     const fetch = async()=>{
-      const res = await api.get("/attendance/monthly-report");
+      const res = await api.get("/attendance/my-monthly-summary")
       setData(res.data);
     };
     fetch();

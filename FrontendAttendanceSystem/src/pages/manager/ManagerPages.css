@@ -1,0 +1,154 @@
+/* ===== Page Layout ===== */
+
+.page-center{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:calc(100vh - 60px);
+  padding:40px 20px;
+}
+
+/* ===== Card ===== */
+
+.card{
+  background:#ffffff;
+  width:100%;
+  max-width:900px;
+  padding:35px 40px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.08);
+  animation:fadeIn 0.35s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(20px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+.card h1{
+  text-align:center;
+  margin-bottom:25px;
+  color:#1f2937;
+}
+
+/* ===== TABLE ===== */
+
+.table-wrapper{
+  width:100%;
+  overflow-x:auto;
+  margin-top:20px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:15px;
+}
+
+thead{
+  background:#2563eb;
+  color:white;
+}
+
+th, td{
+  padding:12px 14px;
+  text-align:center;
+}
+
+tbody tr{
+  border-bottom:1px solid #e5e7eb;
+}
+
+tbody tr:nth-child(even){
+  background:#f8fafc;
+}
+
+tbody tr:hover{
+  background:#eef2ff;
+  transition:0.2s;
+}
+
+/* ===== FILTER SEARCH ===== */
+
+.filter-box{
+  display:flex;
+  justify-content:center;
+  gap:15px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+
+.filter-box input{
+  padding:10px 14px;
+  border:1px solid #d1d5db;
+  border-radius:10px;
+  font-size:15px;
+}
+
+/* ===== BUTTONS ===== */
+
+button{
+  cursor:pointer;
+  border:none;
+  border-radius:10px;
+  font-weight:600;
+  transition:0.25s;
+}
+
+.primary-btn{
+  background:#2563eb;
+  color:white;
+  padding:12px 20px;
+}
+
+.primary-btn:hover{
+  background:#1e4fd8;
+}
+
+.download-btn{
+  background:#10b981;
+  color:white;
+  padding:14px 28px;
+  font-size:16px;
+  display:block;
+  margin:25px auto 0;
+}
+
+.download-btn:hover{
+  background:#0ea472;
+  transform:translateY(-2px);
+}
+
+/* ===== REPORT PAGE ===== */
+
+.report-card{
+  text-align:center;
+}
+
+.report-card p{
+  margin-top:-10px;
+  color:#6b7280;
+  font-size:15px;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+
+@media(max-width:768px){
+
+  .card{
+    padding:25px 20px;
+  }
+
+  th,td{
+    padding:10px 8px;
+    font-size:13px;
+  }
+
+  .filter-box{
+    flex-direction:column;
+    align-items:center;
+  }
+
+}
+
+

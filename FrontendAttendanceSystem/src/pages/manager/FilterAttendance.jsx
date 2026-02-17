@@ -1,46 +1,64 @@
 import { useState } from "react";
-import API from "../../utils/api";
+import api from "../../utils/api";
+import "./ManagerPages.css";
 
-export default function FilterAttendance(){
+export default function FilterAttendance() {
 
-  const [date,setDate]=useState("");
-  const [records,setRecords]=useState([]);
+  const [date, setDate] = useState("");
+  const [records, setRecords] = useState([]);
+  const [searched, setSearched] = useState(false);
 
-  const search=async()=>{
-    const res=await api.get(`/attendance/filter?date=${selectedDate}`);
-    setRecords(res.data);
+  const search = async () => {
+    if (!date) {
+      alert("Please select a date");
+      return;
+    }
+
+    try {
+      const res = await api.get(`/attendance/filter?date=${date}`);
+      setRecords(res.data);
+      setSearched(true);
+    } catch (err) {
+      console.log(err);
+      setRecords([]);
+      setSearched(true);
+    }
   };
 
-  return(
-    <div style={{padding:"30px"}}>
-      <h2>Filter Attendance By Date</h2>
+  return (
+  <div className="page-center">
+    <div className="card">
 
-      <input
-        type="date"
-        onChange={e=>setDate(e.target.value)}
-      />
+      <h1>Filter Attendance By Date</h1>
 
-      <button onClick={search}>Search</button>
+      <div className="filter-box">
+        <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+        <button className="primary-btn" onClick={search}>Search</button>
+      </div>
 
-      <table border="1" style={{marginTop:"20px"}}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>ID</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {records.map(r=>(
-            <tr key={r._id}>
-              <td>{r.userId?.name}</td>
-              <td>{r.userId?.employeeId}</td>
-              <td>{r.status}</td>
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Employee ID</th>
+              <th>Status</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {records.map((r, i) => (
+              <tr key={i}>
+                <td>{r.userId.name}</td>
+                <td>{r.userId.employeeId}</td>
+                <td>{r.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
     </div>
-  );
+  </div>
+);
+
 }

@@ -1,62 +1,52 @@
 import { useEffect, useState } from "react";
 import api from "../../utils/api";
+import "./ManagerPages.css";
 
-export default function Dashboard(){
+export default function Dashboard() {
 
-  const [data,setData] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get("/attendance/analytics");
+        setStats(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
-  },[]);
+  }, []);
 
-  const fetchData = async ()=>{
-    try{
-      const res = await api.get("/attendance/analytics");
-      setData(res.data);
-    }catch(err){
-      console.log(err);
-    }
-  };
+  return (
+    <div className="page-center">
+      <div className="card">
+        <h1>Dashboard Overview</h1>
 
-  if(!data) return <h2>Loading Dashboard...</h2>;
+        {loading && <p style={{ textAlign: "center" }}>Loading data...</p>}
 
-  return(
-    <div>
+        {!loading && stats && (
+          <div className="summary-grid">
+            <div className="summary-box present">
+              <h3>{stats.regular}</h3>
+              <p>Regular Employees</p>
+            </div>
 
-      <h1 style={{marginBottom:"30px"}}>Manager Dashboard</h1>
+            <div className="summary-box late">
+              <h3>{stats.irregular}</h3>
+              <p>Irregular Employees</p>
+            </div>
 
-      <div style={{
-        display:"grid",
-        gridTemplateColumns:"repeat(3, 250px)",
-        gap:"25px"
-      }}>
-
-        <div style={card("#22c55e")}>
-          <h2>{data.regular}</h2>
-          <p>Regular Employees</p>
-        </div>
-
-        <div style={card("#f59e0b")}>
-          <h2>{data.irregular}</h2>
-          <p>Irregular Employees</p>
-        </div>
-
-        <div style={card("#ef4444")}>
-          <h2>{data.lowProductive}</h2>
-          <p>Low Productivity</p>
-        </div>
-
+            <div className="summary-box half">
+              <h3>{stats.lowProductive}</h3>
+              <p>Low Productive</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
-const card = (color)=>({
-  background:color,
-  color:"white",
-  padding:"30px",
-  borderRadius:"15px",
-  textAlign:"center",
-  fontSize:"20px",
-  fontWeight:"bold"
-});

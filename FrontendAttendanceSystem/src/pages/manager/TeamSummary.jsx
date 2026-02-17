@@ -1,45 +1,71 @@
-import { useEffect,useState } from "react";
-import API from "../../utils/api";
-import { PieChart,Pie,Cell,Legend,Tooltip } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import { useEffect, useState } from "react";
+import api from "../../utils/api";
+import "./ManagerPages.css";
 
-export default function TeamSummary(){
+export default function TeamSummary() {
 
-  const [data,setData]=useState([]);
+  const [stats, setStats] = useState([
+    { name: "Regular Employees", value: 0 },
+    { name: "Irregular Employees", value: 0 },
+    { name: "Low Productive", value: 0 }
+  ]);
 
-  useEffect(()=>{
-    API.get("/attendance/analytics")
-    .then(res=>{
-      setData([
-        {name:"Regular Employees",value:res.data.regular},
-        {name:"Irregular Employees",value:res.data.irregular},
-        {name:"Low Productive",value:res.data.lowProductive}
-      ]);
-    });
-  },[]);
+  const [loading, setLoading] = useState(true);
 
-  const COLORS=["#00C49F","#FF8042","#FFBB28"];
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await api.get("/attendance/analytics");
 
-  return(
-    <div style={{textAlign:"center",marginTop:"40px"}}>
-      <h2>Team Performance</h2>
+        setStats([
+          { name: "Regular Employees", value: res.data.regular || 0 },
+          { name: "Irregular Employees", value: res.data.irregular || 0 },
+          { name: "Low Productive", value: res.data.lowProductive || 0 }
+        ]);
 
-      <PieChart width={400} height={300}>
-        <Pie
-          data={data}
-          cx={200}
-          cy={150}
-          outerRadius={100}
-          dataKey="value"
-          label
-        >
-          {data.map((entry,index)=>(
-            <Cell key={index} fill={COLORS[index%COLORS.length]}/>
-          ))}
-        </Pie>
+      } catch (err) {
+        console.error("Analytics error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        <Tooltip/>
-        <Legend/>
-      </PieChart>
+    fetchAnalytics();
+  }, []);
+
+  const COLORS = ["#10b981", "#f97316", "#fbbf24"];
+
+  return (
+    <div className="page-center">
+      <div className="card report-card">
+
+        <h1>Team Performance</h1>
+
+        {loading ? (
+          <p style={{textAlign:"center"}}>Loading analytics...</p>
+        ) : (
+          <div style={{display:"flex", justifyContent:"center"}}>
+            <PieChart width={420} height={340}>
+              <Pie
+                data={stats}
+                cx="50%"
+                cy="45%"
+                outerRadius={130}
+                dataKey="value"
+                label
+              >
+                {stats.map((entry, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend verticalAlign="bottom" height={60}/>
+            </PieChart>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
