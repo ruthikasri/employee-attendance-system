@@ -1,0 +1,57 @@
+.manager-layout{
+  display:flex;
+  min-height:100vh;
+}
+
+/* SIDEBAR */
+.manager-sidebar{
+  width:260px;
+  background:linear-gradient(180deg,#071a3d,#020c20);
+  color:white;
+  padding:25px;
+}
+
+.manager-logo{
+  font-size:26px;
+  font-weight:bold;
+  margin-bottom:40px;
+}
+
+.manager-menu{
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
+
+.manager-menu a{
+  color:white;
+  text-decoration:none;
+  padding:12px;
+  border-radius:8px;
+  transition:0.3s;
+}
+
+.manager-menu a.active{
+  background:#3b82f6;
+}
+
+.manager-menu a:hover{
+  background:#1e40af;
+}
+
+.manager-logout{
+  margin-top:40px;
+  padding:12px;
+  background:#ef4444;
+  border:none;
+  color:white;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+/* CONTENT */
+.manager-content{
+  flex:1;
+  padding:40px;
+  background:#f1f5f9;
+}

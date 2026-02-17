@@ -1,0 +1,79 @@
+/* whole page */
+.employee-layout{
+  display:flex;
+  height:100vh;
+  background:#eef2f7;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:250px;
+  background:linear-gradient(180deg,#0f1f3d,#091428);
+  color:white;
+  padding:25px 18px;
+  display:flex;
+  flex-direction:column;
+}
+
+/* LOGO */
+.logo{
+  font-size:28px;
+  font-weight:700;
+  letter-spacing:1px;
+  text-align:center;
+  margin-bottom:40px;
+  color:#ffffff;
+}
+
+/* menu */
+.menu{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* links */
+.menu a{
+  text-decoration:none;
+  color:#d0d7e6;
+  padding:12px 15px;
+  border-radius:10px;
+  transition:0.25s;
+  font-size:15px;
+}
+
+.menu a:hover{
+  background:#1e3a8a;
+  color:white;
+}
+
+.menu a.active{
+  background:#3b82f6;
+  color:white;
+}
+
+/* logout button */
+.logout-btn{
+  margin-top:40px;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#ef4444;
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  transition:0.25s;
+}
+
+.logout-btn:hover{
+  background:#dc2626;
+}
+
+/* ===== RIGHT CONTENT ===== */
+
+.content{
+  flex:1;
+  padding:40px;
+  overflow-y:auto;
+}

@@ -1,0 +1,42 @@
+.attendance-card{
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  width:420px;
+  box-shadow:0 8px 25px rgba(0,0,0,0.1);
+}
+
+.btn-group{
+  margin-top:20px;
+  display:flex;
+  gap:15px;
+}
+
+.checkin-btn{
+  background:#22c55e;
+  color:white;
+  border:none;
+  padding:10px 20px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.checkout-btn{
+  background:#3b82f6;
+  color:white;
+  border:none;
+  padding:10px 20px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+button:disabled{
+  background:#9ca3af;
+  cursor:not-allowed;
+}
+
+.info{
+  margin-top:15px;
+  color:#ef4444;
+  font-weight:600;
+}
